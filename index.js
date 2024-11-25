@@ -13,9 +13,18 @@ app
   })
   .post((req, res) => {
     const body = req.body;
-    users.push({ id: users.length + 1, ...body });
+    if (
+      !body ||
+      !body.first_name ||
+      !body.last_name ||
+      !body.email ||
+      !body.gender
+    )
+      return res.status(400).json({ error: "all data required" });
+    const newId = users[users.length - 1].id + 1;
+    users.push({ id: newId, ...body });
     fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
-      res.send(users.length + " added");
+      res.send(newId + " added");
     });
   });
 
@@ -26,18 +35,21 @@ app
     const user = users.find((user) => {
       return user.id === id;
     });
+    if (!user) return res.status(404).json({ error: "user not found" });
     return res.json(user);
   })
   .patch((req, res) => {
     const id = Number(req.params.id);
     const newData = req.body;
+    let foundFlag = 0;
     const updatedUsers = users.map((user) => {
       if (user.id === id) {
+        foundFlag = 1;
         return { ...user, ...newData };
       }
       return user;
     });
-
+    if (!foundFlag) return res.status(400).json({ error: "user not found" });
     fs.writeFile(
       "./MOCK_DATA.json",
       JSON.stringify(updatedUsers),
@@ -51,7 +63,8 @@ app
     const updatedUsers = users.filter((user) => {
       return user.id !== id;
     });
-
+    if (users.length === updatedUsers.length)
+      return res.status(400).json({ error: "user not exist" });
     fs.writeFile(
       "./MOCK_DATA.json",
       JSON.stringify(updatedUsers),
